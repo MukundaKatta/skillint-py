@@ -213,6 +213,42 @@ def test_aws_secret_flagged():
     assert any("AWS" in m for m in msgs)
 
 
+def test_anthropic_key_not_double_flagged_as_openai():
+    # The generic OpenAI `sk-...` pattern also matches Anthropic `sk-ant-...`
+    # keys. A single key must be reported once, with the most-specific label.
+    src = textwrap.dedent("""\
+        ---
+        name: leaky
+        description: Use when the user does X. Long enough description for the linter to be happy.
+        ---
+
+        ## Triggers
+
+        Use this token: sk-ant-1234567890abcdef1234567890abcdef
+    """)
+    r = lint_source(src)
+    secret_msgs = [i.message for i in r.issues if i.rule_id == "hardcoded-secret"]
+    assert len(secret_msgs) == 1
+    assert "Anthropic" in secret_msgs[0]
+    assert "OpenAI" not in secret_msgs[0]
+
+
+def test_genuine_openai_key_still_flagged():
+    src = textwrap.dedent("""\
+        ---
+        name: openai-leak
+        description: Use when the user does X. Long enough description for the linter to be happy.
+        ---
+
+        ## Setup
+
+        key: sk-proj-abcdef1234567890ABCDEF1234
+    """)
+    r = lint_source(src)
+    msgs = [i.message for i in r.issues if i.rule_id == "hardcoded-secret"]
+    assert any("OpenAI" in m for m in msgs)
+
+
 def test_no_false_positive_on_prose():
     src = textwrap.dedent("""\
         ---

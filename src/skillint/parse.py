@@ -11,7 +11,7 @@ them, the linter surfaces ``yaml-parse-error``.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 _FRONTMATTER_RE = re.compile(r"^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$")
@@ -168,7 +168,9 @@ def _parse_scalar(value: str) -> object:
             return []
         return [_parse_scalar(part) for part in _split_inline_list(inner)]
     # Quoted strings
-    if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
+    if (s.startswith('"') and s.endswith('"')) or (
+        s.startswith("'") and s.endswith("'")
+    ):
         return _unquote(s)
     low = s.lower()
     if low in ("true", "yes"):
@@ -202,7 +204,7 @@ def _split_inline_list(inner: str) -> list[str]:
             if ch == quote:
                 quote = None
             continue
-        if ch in '"\'':
+        if ch in "\"'":
             quote = ch
             cur.append(ch)
             continue
